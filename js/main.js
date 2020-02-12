@@ -1,41 +1,60 @@
 /* JS for WATS 3020 Roster Project */
 
-///////////////////////////////////////////////////
-//////// TODOs ///////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-// Fill in the blanks below to complete each TODO task.                       //
-////////////////////////////////////////////////////////////////////////////////
+// A Person has a name, email, and username that is derived from the email address
 
-// TODO: Create a base class called `Person` that takes the parameters `name`
-// and `email` and makes those available as attributes. The `constructor()`
-// method should also break the username from before the `@` symbol in the
-// `email` value and use that to store on a `this.username` property.
+class Person {
+    constructor(name, email) {
+        this.name = name;
+        this.email = email;
+        this.username = email.slice(0, email.indexOf('@'));
+        console.log("email: " + email + " username: " + this.username);
+    }
 
-// TODO: Create another class that extends the `Person` class called `Student`.
-// The `Student` class should add a line to the `constructor()` method that sets
-// the property `this.attendance` to an empty Array (`[ ]`). The `attendance`
-// property will be used to record and track attendance. (NOTE: You will need to
-// use the `super()` command so you don't lose the functionality of the
-// `constructor()` method from the `Person` class.)
-//
+}
 
-
-// TODO: Create another method on the `Student` class called `calculateAttendance`.
-// This method should give a percentage of how many days the student was present.
-// It should return a string like "90%" or "84.732%". Attendance should be
-// recorded into an Array using either a `0` for "absent" or a `1` for "present".
-// This should allow attendance percentage to be calculated as the average of
-// all the items in the `attendance` Array.
+// A Student is a type of Person that also has an attendance record array
+class Student extends Person {
+    constructor(name, email) {
+        super(name, email);
+        this.attendance = [];
+    }
 
 
-// TODO: Create another class that extends the `Person` class called `Teacher`.
-// The `Teacher` class should add a property called `this.honorific` (supplied
-// when an instance of `Teacher` is created).
+    // Calculate the Student's attendance rate based on the attendance recorded in the
+    // student's attendance array
+    calculateAttendance() {
+        if (this.attendance.length < 1) {
+            return 0;
+        } else {
+            let totalDays = this.attendance.length;
+            let presentDays = 0;
+            for (let i = 0; i < this.attendance.length; i++) {
+                presentDays += this.attendance[i];
+            }
 
+            let attendanceRate = 0;
+            if (presentDays > 0) {
+                attendanceRate = presentDays / totalDays * 100;
+            }
+            console.log("attendanceRate is " + attendanceRate);
+            return attendanceRate + '%';
+        }
 
-// TODO: Set up our Course class so we can run the whole roster from it.
+    }
+
+}
+
+// A Teacher is a Person with an honorific
+class Teacher extends Person {
+    constructor(name, email, honorific) {
+        super(name, email);
+        this.honorific = honorific;
+    }
+}
+
+// A Course has a code, title, description, teacher, and array of students
 class Course {
-    constructor(courseCode, courseTitle, courseDescription){
+    constructor(courseCode, courseTitle, courseDescription) {
         this.code = courseCode;
         this.title = courseTitle;
         this.description = courseDescription;
@@ -43,79 +62,59 @@ class Course {
         this.students = [];
     }
 
-    /////////////////////////////////////////
-    // TODO: ADD the `addStudent()` method /////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////
-    //
-    // Create a method called `addStudent()` that prompts the user for
-    // information required to create a new `Student` object (`name`, `email`)
-    // and does so, then adds the student to the `this.students` Array. Be sure
-    // to update the roster display by calling `updateRoster()`. You will need
-    // to reference the Class instance using `this` as a parameter for
-    // `updateRoster()`, so it might look like this: `updateRoster(this)`.
+
+    // Add students to the roster based on user input for name and email
+    addStudent() {
+        let newStudentName = prompt("Please enter student's name: ", "John Student");
+        let newStudentEmail = prompt("Please enter student's email:", "john.student@example.com");
+        this.students.push(new Student(newStudentName, newStudentEmail));
+        updateRoster(this);
+
+    }
+
+    // Add a teacher for the course based on user inputs for name and email
+    setTeacher() {
+        let teacherName = prompt("Please enter teacher's name: ", "Jane Teacher");
+        let teacherEmail = prompt("Please enter teacher's email:", "jane.teacher@example.com");
+        // In the absence of instructions to gather user input for the honorific, I set all teacher honorific's to Grand Teacher
+        this.teacher = new Teacher(teacherName, teacherEmail, "Grand Teacher");
+
+        updateRoster(this);
+    }
 
 
-    /////////////////////////////////////////
-    // TODO: ADD the `setTeacher()` method /////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////
-    //
-    // Create a method called `setTeacher()` that prompts the user for the
-    // information required to create a `Teacher` object (`name`, `email`) and
-    // does so, then sets the `this.teacher` property equal to the new `Teacher` object.
+    // Adds a 1 for to a Student's attendance array when they are marked present
+    // Adds a 0 to a Studetn's attendance array when they are marked absent
+    markAttendance(username, attendance) {
+        let currentStudent = this.findStudent(username);
+        if (attendance == 'present') {
+            currentStudent.attendance.push(1);
+        } else if (attendance == 'absent') {
+            currentStudent.attendance.push(0);
+        }
 
-
-    /////////////////////////////////////////
-    // TODO: ADD `markAttendance()` method /////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////
-    //
-    // TODO: Create a method to mark a student's attendance called `markAttendance()`.
-    // This method should accept a parameter called `username` containing the
-    // `username` that will match the `username` property on the `Student` object.
-
-    // TODO: The FIRST step to create a functioning `markAttendance()` method is
-    // to retreive the `Student` object out of the `this.students` Array. You
-    // can use the `this.findStudent()` method (provided below) to accomplish
-    // that goal. Note that you will also have to handle two cases: The default
-    // behavior should be to mark the student present. The alternate behavior
-    // should be to mark the student absent.
-
-    // TODO: Now that we have retrieved the specific `Student` object we want
-    // to work with, we can use the appropriate method on the `Student` object
-    // to record the attendance.
-
-
+    }
 
     //////////////////////////////////////////////
     // Methods provided for you -- DO NOT EDIT /////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
 
-    findStudent(username){
+    findStudent(username) {
         // This method provided for convenience. It takes in a username and looks
         // for that username on student objects contained in the `this.students`
         // Array.
-        let foundStudent = this.students.find(function(student, index){
+        let foundStudent = this.students.find(function (student, index) {
             return student.username == username;
         });
         return foundStudent;
     }
 }
 
-/////////////////////////////////////////
-// TODO: Prompt User for Course Info  //////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-//
-// Prompt the user for information to create the Course. In order to create a
-// `Course` object, you must gather the following information:
-//
-// TODO: Prompt the user for the `courseCode` (the number/code of the course, like "WATS 3000").
-
-// TODO: Prompt the user for the `courseTitle` (the name of the course, like "Introduction to JavaScript").
-
-// TODO: Prompt the user for the  `courseDescription` (the descriptive summary of the course).
-
-// Create a new `Course` object instance called `myCourse` using the three data points just collected from the user.
-// TODO: Add in the values for the information supplied by the user above.
-
+// Set a course's code, title, and description based on user inputs
+let courseCode = prompt("Please enter course code:", "WATS3020");
+let courseTitle = prompt("Please enter course title:", "Intro - Javascript Programming");
+let courseDescription = prompt("Please enter a course description: ", "Learn how to write JavaScript and how to use it on web sites to make engaging, interactive pages");
+let myCourse = new Course(courseCode, courseTitle, courseDescription);
 
 ///////////////////////////////////////////////////
 //////// Main Script /////////////////////////////
@@ -131,7 +130,7 @@ rosterTitle.innerHTML = `${myCourse.code}: ${myCourse.title}`;
 let rosterDescription = document.querySelector('#course-description');
 rosterDescription.innerHTML = myCourse.description;
 
-if (myCourse.teacher){
+if (myCourse.teacher) {
     let rosterTeacher = document.querySelector('#course-teacher');
     rosterTeacher.innerHTML = `${myCourse.teacher.honorific} ${myCourse.teacher.name}`;
 } else {
@@ -145,14 +144,14 @@ rosterTbody.innerHTML = '';
 
 // Create event listener for adding a student.
 let addStudentButton = document.querySelector('#add-student');
-addStudentButton.addEventListener('click', function(e){
+addStudentButton.addEventListener('click', function (e) {
     console.log('Calling addStudent() method.');
     myCourse.addStudent();
 })
 
 // Create event listener for adding a teacher.
 let addTeacherButton = document.querySelector('#add-teacher');
-addTeacherButton.addEventListener('click', function(e){
+addTeacherButton.addEventListener('click', function (e) {
     console.log('Calling setTeacher() method.');
     myCourse.setTeacher();
 })
@@ -160,11 +159,11 @@ addTeacherButton.addEventListener('click', function(e){
 // Call Update Roster to initialize the content of the page.
 updateRoster(myCourse);
 
-function updateRoster(course){
+function updateRoster(course) {
     let rosterTbody = document.querySelector('#roster tbody');
     // Clear Roster Content
     rosterTbody.innerHTML = '';
-    if (course.teacher){
+    if (course.teacher) {
         let rosterTeacher = document.querySelector('#course-teacher');
         rosterTeacher.innerHTML = `${course.teacher.honorific} ${course.teacher.name}`;
     } else {
@@ -172,7 +171,7 @@ function updateRoster(course){
         rosterTeacher.innerHTML = "Not Set";
     }
     // Populate Roster Content
-    for (student of course.students){
+    for (student of course.students) {
         // Create a new row for the table.
         let newTR = document.createElement('tr');
 
@@ -211,19 +210,20 @@ function updateRoster(course){
     setupAttendanceButtons();
 }
 
-function setupAttendanceButtons(){
+function setupAttendanceButtons() {
     // Set up the event listeners for buttons to mark attendance.
     let presentButtons = document.querySelectorAll('.present');
-    for (button of presentButtons){
-        button.addEventListener('click', function(e){
+    for (button of presentButtons) {
+        button.addEventListener('click', function (e) {
             console.log(`Marking ${e.target.dataset.username} present.`);
-            myCourse.markAttendance(e.target.dataset.username);
+            // I changed this to mark the student as present
+            myCourse.markAttendance(e.target.dataset.username, 'present');
             updateRoster(myCourse);
         });
     }
     let absentButtons = document.querySelectorAll('.absent');
-    for (button of absentButtons){
-        button.addEventListener('click', function(e){
+    for (button of absentButtons) {
+        button.addEventListener('click', function (e) {
             console.log(`Marking ${e.target.dataset.username} absent.`);
             myCourse.markAttendance(e.target.dataset.username, 'absent');
             updateRoster(myCourse);
