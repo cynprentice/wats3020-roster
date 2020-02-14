@@ -1,24 +1,45 @@
 /* JS for WATS 3020 Roster Project */
 
 // A Person has a name, email, and username that is derived from the email address
-
 class Person {
     constructor(name, email) {
         this.name = name;
         this.email = email;
-        this.username = email.slice(0, email.indexOf('@'));
-        console.log("email: " + email + " username: " + this.username);
+        // require the @ symbol in email addresses
+        while (this.email.indexOf('@') == -1) {
+            this.email = prompt("Please enter a correctly formatted email addres with the @ symbol", this.email);
+
+        }
+        this.username = this.email.slice(0, this.email.indexOf('@'));
+        console.log("email: " + this.email + " username: " + this.username);
+
     }
 
 }
 
-// A Student is a type of Person that also has an attendance record array
+// A Student is a type of Person that also has an attendance record 
 class Student extends Person {
     constructor(name, email) {
         super(name, email);
+        this.presentDays = 0;
+        this.absentDays = 0;
         this.attendance = [];
     }
 
+    // Adds a 1 for to a Student's attendance array when they are marked present
+    // and tracks the number of present days
+    markPresent() {
+        this.presentDays += 1;
+        this.attendance.push(1);
+
+    }
+
+    // Adds a 0 to a Student's attendance array when they are marked absent
+    // and tracks the number of absent days
+    markAbsent() {
+        this.absentDays += 1;
+        this.attendance.push(0);
+    }
 
     // Calculate the Student's attendance rate based on the attendance recorded in the
     // student's attendance array
@@ -41,7 +62,6 @@ class Student extends Person {
         }
 
     }
-
 }
 
 // A Teacher is a Person with an honorific
@@ -67,10 +87,29 @@ class Course {
     addStudent() {
         let newStudentName = prompt("Please enter student's name: ", "John Student");
         let newStudentEmail = prompt("Please enter student's email:", "john.student@example.com");
-        this.students.push(new Student(newStudentName, newStudentEmail));
-        updateRoster(this);
+        let newStudent = new Student(newStudentName, newStudentEmail);
+        console.log("Adding student " + newStudent.name + " with username:" + newStudent.username + " and email:" + newStudent.email);
+        //check whether a student with this username has already been added to the roster
+        if (this.findStudent(newStudent.username)) {
+            alert("This student has already been added to the class. All students must have unique email/usernames");
+        } else if (newStudent.email) {
+            this.students.push(newStudent);
+            updateRoster(this);
+        }
+    }
+
+    // Remove Student based on username
+    removeStudent(username) {
+        //find the position of the student in the student array
+        let removeIndex = this.students.map(function (item) {
+            return item.username;
+        }).indexOf(username);
+
+        // remove student from the array
+        this.students.splice(removeIndex, 1);
 
     }
+
 
     // Add a teacher for the course based on user inputs for name and email
     setTeacher() {
@@ -82,18 +121,34 @@ class Course {
         updateRoster(this);
     }
 
+    //Remove the course teacher
+    removeTeacher() {
+        this.teacher = null;
+        updateRoster(this);
+    }
 
-    // Adds a 1 for to a Student's attendance array when they are marked present
-    // Adds a 0 to a Studetn's attendance array when they are marked absent
+    // Mark the student as present or absent
     markAttendance(username, attendance) {
         let currentStudent = this.findStudent(username);
         if (attendance == 'present') {
-            currentStudent.attendance.push(1);
+            currentStudent.markPresent();
         } else if (attendance == 'absent') {
-            currentStudent.attendance.push(0);
+            currentStudent.markAbsent();
         }
 
     }
+
+    //////////////////////////////////////////////
+    // commenting out "basic implementation"
+    //markAttendance(username, attendance) {
+    //let currentStudent = this.findStudent(username);
+    //    if (attendance == 'present') {
+    //       currentStudent.attendance.push(1);
+    //    } else if (attendance == 'absent') {
+    //       currentStudent.attendance.push(0);
+    //   }
+    //////////////////////////////////////////////
+
 
     //////////////////////////////////////////////
     // Methods provided for you -- DO NOT EDIT /////////////////////////////////
@@ -149,11 +204,17 @@ addStudentButton.addEventListener('click', function (e) {
     myCourse.addStudent();
 })
 
+
 // Create event listener for adding a teacher.
 let addTeacherButton = document.querySelector('#add-teacher');
 addTeacherButton.addEventListener('click', function (e) {
     console.log('Calling setTeacher() method.');
     myCourse.setTeacher();
+})
+let removeTeacherButton = document.querySelector('#remove-teacher');
+removeTeacherButton.addEventListener('click', function (e) {
+    console.log('Calling removeTeacher() method.');
+    myCourse.removeTeacher();
 })
 
 // Call Update Roster to initialize the content of the page.
@@ -180,9 +241,21 @@ function updateRoster(course) {
         nameTD.innerHTML = student.name;
         newTR.appendChild(nameTD);
 
+
         let emailTD = document.createElement('td');
         emailTD.innerHTML = student.email;
         newTR.appendChild(emailTD);
+
+        //add Present Days
+        let presentTD = document.createElement('td');
+        presentTD.innerHTML = student.presentDays;
+        newTR.appendChild(presentTD);
+
+        //add Absent Days
+        let absentTD = document.createElement('td');
+        absentTD.innerHTML = student.absentDays;
+        newTR.appendChild(absentTD);
+
 
         let attendanceTD = document.createElement('td');
         attendanceTD.innerHTML = student.calculateAttendance();
@@ -201,6 +274,13 @@ function updateRoster(course) {
         absentButton.setAttribute('class', 'absent');
         actionsTD.appendChild(absentButton);
 
+        //add Remove Student button
+        let removeButton = document.createElement('button');
+        removeButton.innerHTML = "Remove Student";
+        removeButton.setAttribute('data-username', student.username);
+        removeButton.setAttribute('class', 'remove');
+        actionsTD.appendChild(removeButton);
+
         newTR.appendChild(actionsTD);
 
         // Append the new row to the roster table.
@@ -208,6 +288,7 @@ function updateRoster(course) {
     }
     // Call function to set event listeners on attendance buttons.
     setupAttendanceButtons();
+    setupRemovalButtons();
 }
 
 function setupAttendanceButtons() {
@@ -229,5 +310,19 @@ function setupAttendanceButtons() {
             updateRoster(myCourse);
         });
     }
+
+
 }
 
+function setupRemovalButtons() {
+    // Set up the event listeners for buttons to mark attendance.
+    let removeButtons = document.querySelectorAll('.remove');
+    for (button of removeButtons) {
+        button.addEventListener('click', function (e) {
+            console.log(`Removing ${e.target.dataset.username} .`);
+            // I changed this to mark the student as present
+            myCourse.removeStudent(e.target.dataset.username);
+            updateRoster(myCourse);
+        });
+    }
+}
